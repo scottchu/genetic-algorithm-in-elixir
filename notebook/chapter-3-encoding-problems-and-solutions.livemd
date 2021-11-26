@@ -1,0 +1,199 @@
+# Chapter 3 - Encoding Problems and Solutions
+
+## Introduction
+
+A key aspect of problem solving is to **model problems** in a way that
+makes them easier to understand and thus easier to solve.
+
+## Using Structs to Represent Chromosomes
+
+### Understanding Chromosomes
+
+<hr />
+
+![Chromosome](images/chromosome.png)
+
+<hr />
+
+At the most basic level, a **chromosome** is a single solution to your 
+problem. It's **a series of genes** consisting of values known as 
+**alleles**.
+
+Genes can represent any number of things. For example, in the 
+**travelling salesman** problem, each gene represents a successive 
+stop in a city. The entire chromosome, then represents a complete 
+path to every city defined in the problem. Genes are typically 
+represented using list types of other enumerab le data types, like 
+trees, sets, and arrays.
+
+while genes are the most fundamental piece of a chromosome, there are 
+several characteristics you can track for both convenience and 
+functionality. A basic chromosome struct could include fitness, size, 
+and age on top of genes.
+
+## Use Behaviours to Model Problems
+
+An abstraction is a simplification of underlying complexities and 
+implementations. The purpose of abstraction is to force you to 
+think of things at different levels of specificity. It gives you an 
+idea of what to look for before you approach a problem.
+
+## Understanding and Choosing Genotypes
+
+One of the most important decisions you can make when using a genetic 
+algorithm is the type of **encoding** you use to represent solutions. 
+encodings are simply representations of a single solution. A good 
+encoding needs to contain only the information necessary to represent 
+a complete solution to a problem. If a solution is a path through a 
+grid, an encoding of a solution would only need to contain the 
+coordinates of each gridpoint it passes through.
+
+The type of encoding scheme you use is know as a **genotype**. The 
+genotype of a chromosome tells you what the chromosome should look 
+like. It defines your search space.
+
+While the genotype is the internal representation of solutions, 
+the **phenotype** is the expressed representation of solutions.
+
+<hr />
+
+![Genotype Phenotype](images/genotype-phenotype.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Binary Genotypes
+
+Binary genotypes, or *bitstrings*, are genes consisting of only 
+1s and 0s. The binary genotype is the most common genotype because 
+you can apply it to such a wide variety of problems.
+
+One example of how you can use binary genotypes is in representing 
+different characteristics. Each gene can represent the presence of 
+a single characteristic -- either with a 1 or a 0. You can even use 
+binary genotypes to represent continuous values.
+
+<hr />
+
+![Genotype Binary](images/genotype-binary.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Permutations Genotypes
+
+The second most common genotype is **premutations**. Premutations are 
+especially effective for scheduling problems of finding paths in a 
+finite set of points. The types of problems involving premutation 
+genotypes are called *combinatorial optimization*. Combinatorial 
+optimization problems looks for ordered solutions. One limitation 
+of premutations is the type of mutation and crossover that you can 
+use. It's difficult to create new chromosomes that maintain the 
+integrity of the premutation.
+
+<hr />
+
+![Genotype Binary](images/genotype-permutation.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Real-Value Genotypes
+
+**Real-value genotypes** represent solutions using real values. This 
+"real value" could be a string, a float, a character, and so forth. 
+It is common for problem involving weights of some sort of where you 
+need to generate a string. Real-value genotypes are less common, 
+but they prove useful when you need to optimize parameters of some sort.
+
+Why is it necessary to have real-value genotypes? One reason is 
+*precision*. When manually encode and decode continuous values as 
+binary genotypes, the access to the floating-point precision implemented 
+natively is lost. The use of real-value genotypes can simplify the code.
+
+<hr />
+
+![](images/genotype-read-value.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Tree/Graph Genotypes
+
+The most common application of tree genotypes is in *genetic 
+programming*. Genetic programming is a branch of evolutionary 
+computation in which one tries to evolve programs to achieve a 
+desired result. the idea is that you can teach a computer to program 
+itself. In these cases, solutions are typically represented as syntax 
+tree representing valid programs. As interesting as they are, there's 
+little evidence that shows genetic programming is of any tangible use. 
+It's difficult to evolve solutions so that they remain valid, and 
+other techniques out there perform better on programming tasks.
+
+<hr />
+
+![Tree Graph Genotype](images/genotype-tree-graph.png)
+
+## Solving One-Max for the Last Time
+
+```elixir
+defmodule OneMax do
+  @behaviour Framework.Problem
+
+  alias Framework.Chromosome
+
+  @size 1000
+  @max 1000
+
+  @impl true
+  def genotype() do
+    1..@size
+    |> Enum.map(fn _ -> Enum.random(0..1) end)
+    |> Chromosome.create()
+  end
+
+  @impl true
+  def fitness_function(chromosome) do
+    Enum.sum(chromosome.genes)
+  end
+
+  @impl true
+  def terminate?([best | _]) do
+    best.fitness == @max
+  end
+end
+```
+
+```elixir
+Framework.run(OneMax, population_size: 100, mutation_threshold: 0.05)
+```
+
+## Spelling Words with Genetic Algorithms
+
+```elixir
+defmodule Speller do
+  @behaviour Framework.Problem
+
+  alias Framework.Chromosome
+
+  def genotype() do
+    Stream.repeatedly(&random_char/0)
+    |> Enum.take(34)
+    |> Chromosome.create()
+  end
+
+  @chars ?a..?z
+  defp random_char do
+    Enum.random(@chars)
+  end
+
+  @target "supercalifragilisticexpialidocious"
+  def fitness_function(%Chromosome{genes: genes}) do
+    genes
+    |> List.to_string()
+    |> String.jaro_distance(@target)
+  end
+
+  def terminate?([%Chromosome{fitness: f} | _]), do: f == 1
+end
+```
+
+```elixir
+Framework.run(Speller, population_size: 100, mutation_threshold: 0.5)
+```

@@ -1,0 +1,160 @@
+# Chapter 2 - Breaking Down Genetic Algorithms
+
+## Introduction
+
+While previous solution to the One-Max problem was effective, it's difficult to both 
+tweak and expand. More advanced applications of genetic algorithms will require 
+extensive fine-tunning and experimentation to achieve the best result, which means 
+it is required to create modular and easily customizable solutions.
+
+## Reviewing Genetic Algorithms
+
+The genetic algorithms from previous chapter work via a series of transformations
+on populations of chromosomes over some number of generations. One generation
+represents one complete series of transformations. Idealy, the population that 
+results from subsequent generations have better solutions than previous ones.
+
+The structure of a genetic algorithm provides a generic framework. Every step
+in the process takes a population and produces a population for the next step.
+It can easily generalize the algorithms to all types of problems. While some
+parts of the algorithm - such as *encoding, evaluation, and termination* - 
+pertain only to specific problem, most aspects of a genetic algorithm are 
+common to all problems.
+
+## Looking Deeper into Genetic Algorithms
+
+Every genetic algorithm follows the same basic steps. While different algorithms for 
+different problems may use different techniques, probabilities, or strategies, they all 
+share the same structure.
+
+All genetic algorithms follow the same structure. They all use chromosomes and populations, 
+and they all require similar inputs.
+
+### Chromosomes and Populations
+
+Chromosomes represent solutions to problems. In the One-Max problem, your solutions consisted 
+of a series of 1s and 0s; Some problems are encoded using real values, some as premutations,
+ and some using characters. Also, some problems require that you use a data structure other
+  than a list o encode solutions.
+
+All of this means that specific encoding schemes are unique and vary from problem to problem.
+
+Based on the available information
+
+* To use polymorphism, you must encode chromosomes using a data structure that implements 
+  the `Enumerable` protocol.
+* Because populations are stores as list, you can use any function in the `Enum` or `List` 
+  library to implement transformations.
+* The algorithm should work on any population size.
+
+### Initializing the Population
+
+* The initialization step must produce an initial population - a list of possible solutions.
+* The function which initializes the population should be agnostic to how the chromosome 
+  is encoded. You can achieve this by accepting a function that returns a chromosome.
+
+### Evaluating the Population
+
+The evaluation step is responsible for evaluating each chromosome based on some fitness
+function and sorting the population based on this fitness. This makes it easy to extrat 
+the best chromosome from the population. It also makes it easier to work with the population 
+in the selection step.
+
+* The evaluation step must take a population as input
+* The evaluation step must produce a population sorted by fitness
+* The function which evaluate the population should take a parameter that is a function 
+  that returns the fitness of each chromosome
+* The fitness function can return anything, as long as the fitness can be sorted.
+
+### Selecting Parents
+
+Selection is responsible for matching parents that will produce strong children. The 
+strongest chromosomes will reproduce with other strong chromosomes. This is referred
+to as **elitism selection**.
+
+* The selection step must take a population as input
+* The selection step must produce a transformed population that's easy to work with 
+  during crossover
+
+### Creating Children
+
+Crossover is analogous to reproduction. The goal of crossover is to exploit the strengths 
+of current solutions to find new, better solutions. Crossover is one of the last steps 
+before starting a new generation and should create a population that looks and feels 
+identical to the one you started with - albeit with new solutions.
+
+* Takre a list of 2-tuples as input
+* Combine the 2-tuples, wich represent pairs of parents. For now, use single-point crossover
+* Return a population identical in the size to the initial population
+
+### Creating Mutants
+
+Mutation is the last step before the next generation. The goal of mutation is to prevent 
+premature convergence by transforming some of the chromosomes in the population.
+
+* The mutation step should accept a population as input
+* The mutation step should matate only some of the chromosomes in the population - the 
+  percentage should be relatively small
+* The mutation strategy should be identical to the mutation function from the previous chapter
+
+### Termination Criteria
+
+* Termination criteria must be defined by the problem - the framework must accept some 
+  problem-defined criteria to stop the algorithm
+* Termination criteria, for now, must be just an integer - the maximum value needed to 
+  stop evolution
+
+## Using Mix to Write Genetic Aglorithms
+
+Code is created under `./genetic_algorithm`
+
+## Building a Framework for Genetic Algorithms
+
+Framework is created under `./genetic_algorithm/apps/framework`
+
+## Understanding Hyperparameters
+
+In machine learning, *hyperparameters* refer to the parts of the 
+algorithm you set before the algorithm starts training. Internally,
+the algorithm learns parameters that help it perform a task. 
+Externally, the programmer controls parameters that dictate how the
+algorithm trains.
+
+In genetic algorithms, *hyperparameters* refer to things like **population
+size, mutation rate, and so on**, that you choose before running the
+algorithm.
+
+*Hyperparameters* have a huge impact on the outcome of the algorithm,
+it's important that you're able to change them quickly.
+
+## Solving the One-Max Problem Again
+
+```elixir
+defmodule OneMax do
+  @behaviour Framework.Problem
+
+  alias Framework.Chromosome
+
+  @size 1000
+  @max 1000
+
+  @impl true
+  def genotype() do
+    1..@size
+    |> Enum.map(fn _ -> Enum.random(0..1) end)
+    |> Chromosome.create()
+  end
+
+  @impl true
+  def fitness_function(chromosome) do
+    Enum.sum(chromosome.genes)
+  end
+
+  @impl true
+  def terminate?([best | _]) do
+    best.fitness == @max
+  end
+end
+
+Framework.run(OneMax, population_size: 100)
+```
